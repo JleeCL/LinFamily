@@ -279,6 +279,11 @@
       if (window.crypto && window.crypto.randomUUID) {
         return window.crypto.randomUUID();
       }
+      if (window.crypto && window.crypto.getRandomValues) {
+        const bytes = new Uint8Array(8);
+        window.crypto.getRandomValues(bytes);
+        return `member_${Array.from(bytes).map((byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+      }
       generatedIdCounter += 1;
       return `member_${Date.now()}_${generatedIdCounter}`;
     }
@@ -287,7 +292,7 @@
       if (!avatarUrl) return DEFAULT_AVATAR_SVG;
       try {
         const parsed = new URL(avatarUrl, window.location.href);
-        if (parsed.protocol === 'http:' || parsed.protocol === 'https:' || parsed.protocol === 'data:') {
+        if (parsed.protocol === 'https:' || parsed.protocol === 'data:') {
           return parsed.href;
         }
       } catch {}

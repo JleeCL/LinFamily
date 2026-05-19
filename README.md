@@ -17,3 +17,4 @@ Open `index.html` in a browser.
 - WhatsApp trigger when a meal is set to not coming (`❌`)
 
 - To override the default WhatsApp recipient, set `localStorage.linfamily_whatsapp_number` to digits-only international number.
+  - Example: `localStorage.setItem('linfamily_whatsapp_number', '6597299918')`
