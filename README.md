@@ -6,6 +6,14 @@ A lightweight mobile-first family meal tracker.
 
 Open `index.html` in a browser.
 
+## GitHub Pages (public link)
+
+After this repository enables GitHub Pages with **Build and deployment source = GitHub Actions**, pushes to `main` will deploy this static app.
+
+Typical hosted URL:
+
+`https://jleecl.github.io/LinFamily/`
+
 ## Features
 
 - Dynamic family member list (add/remove)
