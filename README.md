@@ -4,7 +4,7 @@ A lightweight mobile-first family meal tracker.
 
 ## Run
 
-Open `/home/runner/work/LinFamily/LinFamily/index.html` in a browser.
+Open `index.html` in a browser.
 
 ## Features
 
