@@ -10,7 +10,11 @@ Open `index.html` in a browser.
 
 After this repository enables GitHub Pages with **Build and deployment source = GitHub Actions**, pushes to `main` will deploy this static app.
 
-Typical hosted URL:
+Typical hosted URL format:
+
+`https://<owner>.github.io/<repository>/`
+
+For this repository, that is typically:
 
 `https://jleecl.github.io/LinFamily/`
 
@@ -24,5 +28,5 @@ Typical hosted URL:
 - Instant local auto-save in `localStorage`
 - WhatsApp trigger when a meal is set to not coming (`❌`)
 
-- To override the default WhatsApp recipient, set `localStorage.linfamily_whatsapp_number` to digits-only international number.
+- To override the default WhatsApp recipient, set `localStorage.linfamily_whatsapp_number` to a digits-only international number.
   - Example: `localStorage.setItem('linfamily_whatsapp_number', '6597299918')`
