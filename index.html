@@ -364,6 +364,9 @@
         avatar.className = 'avatar';
         avatar.alt = `${member.name} avatar`;
         avatar.src = getAvatarSrc(member.avatar);
+        avatar.addEventListener('error', () => {
+          avatar.src = DEFAULT_AVATAR_SVG;
+        }, { once: true });
 
         const name = document.createElement('div');
         name.className = 'name';

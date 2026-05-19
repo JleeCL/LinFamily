@@ -15,3 +15,5 @@ Open `index.html` in a browser.
 - Automatic weekday/weekend label
 - Instant local auto-save in `localStorage`
 - WhatsApp trigger when a meal is set to not coming (`❌`)
+
+- To override the default WhatsApp recipient, set `localStorage.linfamily_whatsapp_number` to digits-only international number.
