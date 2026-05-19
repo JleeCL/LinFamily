@@ -197,8 +197,10 @@
   <script>
     const STORAGE_MEMBERS = 'linfamily_members';
     const STORAGE_DAILY_PREFIX = 'linfamily_daily_';
+    const DEFAULT_AVATAR_SVG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" fill="%23e2e8f0"/%3E%3Ccircle cx="32" cy="24" r="12" fill="%23a0aec0"/%3E%3Crect x="14" y="40" width="36" height="16" rx="8" fill="%23a0aec0"/%3E%3C/svg%3E';
     const DEFAULT_WHATSAPP_NUMBER = '6597299918';
-    const WHATSAPP_NUMBER = (localStorage.getItem('linfamily_whatsapp_number') || DEFAULT_WHATSAPP_NUMBER).replace(/\D/g, '');
+    const configuredNumber = (localStorage.getItem('linfamily_whatsapp_number') || DEFAULT_WHATSAPP_NUMBER).replace(/\D/g, '');
+    const WHATSAPP_NUMBER = /^[1-9]\d{7,14}$/.test(configuredNumber) ? configuredNumber : DEFAULT_WHATSAPP_NUMBER;
 
     const date = new Date();
     const dateKey = date.toISOString().slice(0, 10);
@@ -207,6 +209,7 @@
       members: loadMembers(),
       daily: loadDaily(dateKey)
     };
+    let generatedIdCounter = 0;
 
     const dateLabelEl = document.getElementById('date-label');
     const dayTypeLabelEl = document.getElementById('day-type-label');
@@ -269,7 +272,26 @@
     function triggerWhatsApp(meal) {
       const message = encodeURIComponent(formatMessage(meal));
       const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
-      window.open(url, '_blank', 'noopener');
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function createMemberId() {
+      if (window.crypto && window.crypto.randomUUID) {
+        return window.crypto.randomUUID();
+      }
+      generatedIdCounter += 1;
+      return `member_${Date.now()}_${generatedIdCounter}`;
+    }
+
+    function getAvatarSrc(avatarUrl) {
+      if (!avatarUrl) return DEFAULT_AVATAR_SVG;
+      try {
+        const parsed = new URL(avatarUrl, window.location.href);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:' || parsed.protocol === 'data:') {
+          return parsed.href;
+        }
+      } catch {}
+      return DEFAULT_AVATAR_SVG;
     }
 
     function toggleMeal(memberId, meal) {
@@ -293,9 +315,7 @@
         return;
       }
 
-      const id = (window.crypto && window.crypto.randomUUID)
-        ? window.crypto.randomUUID()
-        : `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      const id = createMemberId();
       state.members.push({ id, name, avatar });
       ensureMemberStatus(id);
       persistMembers();
@@ -343,7 +363,7 @@
         const avatar = document.createElement('img');
         avatar.className = 'avatar';
         avatar.alt = `${member.name} avatar`;
-        avatar.src = member.avatar || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" fill="%23e2e8f0"/%3E%3Ccircle cx="32" cy="24" r="12" fill="%23a0aec0"/%3E%3Crect x="14" y="40" width="36" height="16" rx="8" fill="%23a0aec0"/%3E%3C/svg%3E';
+        avatar.src = getAvatarSrc(member.avatar);
 
         const name = document.createElement('div');
         name.className = 'name';
