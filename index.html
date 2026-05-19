@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Family Meal Tracker</title>
+  <style>
+    :root {
+      --coming: #1f9d55;
+      --not-coming: #c53030;
+      --bg: #f7fafc;
+      --card: #ffffff;
+      --text: #1a202c;
+      --muted: #4a5568;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 16px 12px 32px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .date {
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .day-type {
+      font-size: 0.85rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #edf2f7;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .add-member {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    input, button {
+      min-height: 44px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e0;
+      padding: 0 12px;
+      font-size: 1rem;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 700;
+      background: #fff;
+    }
+
+    #add-member-btn {
+      background: #2b6cb0;
+      color: white;
+      border-color: #2b6cb0;
+    }
+
+    .member-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .member {
+      display: grid;
+      grid-template-columns: minmax(120px, 1fr) auto auto auto;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .member-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      object-fit: cover;
+      background: #e2e8f0;
+      flex: 0 0 auto;
+    }
+
+    .name {
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .meal-btn {
+      min-width: 86px;
+      border: 2px solid var(--coming);
+      color: var(--coming);
+      background: #f0fff4;
+    }
+
+    .meal-btn.not-coming {
+      border-color: var(--not-coming);
+      color: var(--not-coming);
+      background: #fff5f5;
+    }
+
+    .remove-btn {
+      border-color: #fed7d7;
+      color: #9b2c2c;
+      min-width: 44px;
+      padding: 0;
+    }
+
+    .summary {
+      margin: 12px 0;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 16px;
+      border: 1px dashed #cbd5e0;
+      border-radius: 10px;
+    }
+
+    @media (max-width: 480px) {
+      .add-member {
+        grid-template-columns: 1fr;
+      }
+
+      .member {
+        grid-template-columns: 1fr 1fr 1fr auto;
+      }
+
+      .meal-btn {
+        min-width: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="card">
+      <div class="top">
+        <div class="date" id="date-label"></div>
+        <div class="day-type" id="day-type-label"></div>
+      </div>
+
+      <div class="add-member">
+        <input id="member-name" placeholder="Member name" aria-label="Member name" />
+        <input id="member-avatar" placeholder="Avatar URL (optional)" aria-label="Avatar URL" />
+        <button id="add-member-btn" type="button">Add</button>
+      </div>
+
+      <div class="summary" id="summary"></div>
+      <div class="member-list" id="member-list"></div>
+      <div class="empty" id="empty-state" hidden>Add family members to start tracking meals.</div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_MEMBERS = 'linfamily_members';
+    const STORAGE_DAILY_PREFIX = 'linfamily_daily_';
+    const DEFAULT_AVATAR_SVG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" fill="%23e2e8f0"/%3E%3Ccircle cx="32" cy="24" r="12" fill="%23a0aec0"/%3E%3Crect x="14" y="40" width="36" height="16" rx="8" fill="%23a0aec0"/%3E%3C/svg%3E';
+    const DEFAULT_WHATSAPP_NUMBER = '6597299918';
+    const configuredNumber = (localStorage.getItem('linfamily_whatsapp_number') || DEFAULT_WHATSAPP_NUMBER).replace(/\D/g, '');
+    const WHATSAPP_NUMBER = /^[1-9]\d{7,14}$/.test(configuredNumber) ? configuredNumber : DEFAULT_WHATSAPP_NUMBER;
+
+    const date = new Date();
+    const dateKey = date.toISOString().slice(0, 10);
+
+    const state = {
+      members: loadMembers(),
+      daily: loadDaily(dateKey)
+    };
+    let generatedIdCounter = 0;
+
+    const dateLabelEl = document.getElementById('date-label');
+    const dayTypeLabelEl = document.getElementById('day-type-label');
+    const listEl = document.getElementById('member-list');
+    const summaryEl = document.getElementById('summary');
+    const emptyStateEl = document.getElementById('empty-state');
+    const nameInput = document.getElementById('member-name');
+    const avatarInput = document.getElementById('member-avatar');
+
+    dateLabelEl.textContent = date.toLocaleDateString(undefined, {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    dayTypeLabelEl.textContent = isWeekend ? 'Weekend' : 'Weekday';
+
+    function loadMembers() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_MEMBERS)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function loadDaily(day) {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_DAILY_PREFIX + day)) || { date: day, members: {} };
+      } catch {
+        return { date: day, members: {} };
+      }
+    }
+
+    function persistMembers() {
+      localStorage.setItem(STORAGE_MEMBERS, JSON.stringify(state.members));
+    }
+
+    function persistDaily() {
+      localStorage.setItem(STORAGE_DAILY_PREFIX + dateKey, JSON.stringify(state.daily));
+    }
+
+    function ensureMemberStatus(memberId) {
+      if (!state.daily.members[memberId]) {
+        state.daily.members[memberId] = { lunch: true, dinner: true };
+      }
+      return state.daily.members[memberId];
+    }
+
+    function formatMessage(meal) {
+      const msgDate = date.toLocaleDateString(undefined, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+      return `${msgDate} - I am not coming back for ${meal}`;
+    }
+
+    function triggerWhatsApp(meal) {
+      const message = encodeURIComponent(formatMessage(meal));
+      const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function createMemberId() {
+      if (window.crypto && window.crypto.randomUUID) {
+        return window.crypto.randomUUID();
+      }
+      if (window.crypto && window.crypto.getRandomValues) {
+        const bytes = new Uint8Array(8);
+        window.crypto.getRandomValues(bytes);
+        return `member_${Array.from(bytes).map((byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+      }
+      generatedIdCounter += 1;
+      return `member_${Date.now()}_${generatedIdCounter}`;
+    }
+
+    function getAvatarSrc(avatarUrl) {
+      if (!avatarUrl) return DEFAULT_AVATAR_SVG;
+      try {
+        const parsed = new URL(avatarUrl, window.location.href);
+        if (parsed.protocol === 'https:' || parsed.protocol === 'data:') {
+          return parsed.href;
+        }
+      } catch {}
+      return DEFAULT_AVATAR_SVG;
+    }
+
+    function toggleMeal(memberId, meal) {
+      const memberStatus = ensureMemberStatus(memberId);
+      const next = !memberStatus[meal];
+      memberStatus[meal] = next;
+      persistDaily();
+      render();
+
+      if (!next) {
+        triggerWhatsApp(meal);
+      }
+    }
+
+    function addMember() {
+      const name = nameInput.value.trim();
+      const avatar = avatarInput.value.trim();
+
+      if (!name) {
+        nameInput.focus();
+        return;
+      }
+
+      const id = createMemberId();
+      state.members.push({ id, name, avatar });
+      ensureMemberStatus(id);
+      persistMembers();
+      persistDaily();
+
+      nameInput.value = '';
+      avatarInput.value = '';
+      nameInput.focus();
+      render();
+    }
+
+    function removeMember(memberId) {
+      state.members = state.members.filter((m) => m.id !== memberId);
+      delete state.daily.members[memberId];
+      persistMembers();
+      persistDaily();
+      render();
+    }
+
+    function mealButton(label, isComing) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `meal-btn${isComing ? '' : ' not-coming'}`;
+      button.textContent = `${isComing ? '✅' : '❌'} ${label}`;
+      return button;
+    }
+
+    function render() {
+      listEl.innerHTML = '';
+
+      let lunchComingCount = 0;
+      let dinnerComingCount = 0;
+
+      state.members.forEach((member) => {
+        const status = ensureMemberStatus(member.id);
+        if (status.lunch) lunchComingCount += 1;
+        if (status.dinner) dinnerComingCount += 1;
+
+        const row = document.createElement('div');
+        row.className = 'member';
+
+        const info = document.createElement('div');
+        info.className = 'member-info';
+
+        const avatar = document.createElement('img');
+        avatar.className = 'avatar';
+        avatar.alt = `${member.name} avatar`;
+        avatar.src = getAvatarSrc(member.avatar);
+        avatar.addEventListener('error', () => {
+          avatar.src = DEFAULT_AVATAR_SVG;
+        }, { once: true });
+
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = member.name;
+
+        info.appendChild(avatar);
+        info.appendChild(name);
+
+        const lunchBtn = mealButton('Lunch', status.lunch);
+        lunchBtn.addEventListener('click', () => toggleMeal(member.id, 'lunch'));
+
+        const dinnerBtn = mealButton('Dinner', status.dinner);
+        dinnerBtn.addEventListener('click', () => toggleMeal(member.id, 'dinner'));
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-btn';
+        removeBtn.textContent = '🗑';
+        removeBtn.setAttribute('aria-label', `Remove ${member.name}`);
+        removeBtn.addEventListener('click', () => removeMember(member.id));
+
+        row.appendChild(info);
+        row.appendChild(lunchBtn);
+        row.appendChild(dinnerBtn);
+        row.appendChild(removeBtn);
+
+        listEl.appendChild(row);
+      });
+
+      summaryEl.textContent = `${lunchComingCount} coming for lunch • ${dinnerComingCount} coming for dinner`;
+      emptyStateEl.hidden = state.members.length > 0;
+    }
+
+    document.getElementById('add-member-btn').addEventListener('click', addMember);
+    nameInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') addMember();
+    });
+    avatarInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') addMember();
+    });
+
+    render();
+  </script>
+</body>
+</html>
